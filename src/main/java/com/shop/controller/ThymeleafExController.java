@@ -71,4 +71,17 @@ public class ThymeleafExController {
 
         return "thymeleafEx/thymeleafEx04";
     }
+
+    @GetMapping(value = "/ex05")
+    public String thymeleafExample05() {
+        return "thymeleafEx/thymeleafEx05";
+    }
+
+    @GetMapping(value = "/ex06")
+    public String thymeleafExample06(String parameter1, String parameter2, Model model) {  // 변수 이름은 타임리프의 파라미터 이름과 동일해야 함
+        model.addAttribute("param1", parameter1);
+        model.addAttribute("param2", parameter2);
+
+        return "thymeleafEx/thymeleafEx06";
+    }
 }
