@@ -23,34 +23,38 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.formLogin()
-                .loginPage("/members/login")  // 로그인 URL 설정
-                .defaultSuccessUrl("/")  //로그인 성공 시 이동할 URL
-                .usernameParameter("email")  // 로그인 시 사용할 파라미터 이름으로 email을 지정
-                .failureUrl("/members/login/error");  // 로그인 실패 시 이동할 URL
+        http.formLogin((formLogin) ->
+                formLogin
+                        .loginPage("/members/login")  // 로그인 URL 설정
+                        .defaultSuccessUrl("/")  //로그인 성공 시 이동할 URL
+                        .usernameParameter("email")  // 로그인 시 사용할 파라미터 이름으로 email을 지정
+                        .failureUrl("/members/login/error")  // 로그인 실패 시 이동할 URL
+        );
 
-        http.logout()
-                .logoutRequestMatcher(new AntPathRequestMatcher("/members/logout"))  // 로그아웃 URL 설정
-                .logoutSuccessUrl("/");  // 로그아웃 성공 시 이동할 URL 설정
+        http.logout((logout) ->
+                logout
+                        .logoutRequestMatcher(new AntPathRequestMatcher("/members/logout"))  // 로그아웃 URL 설정
+                        .logoutSuccessUrl("/")  // 로그아웃 성공 시 이동할 URL 설정
+        );
 
-        http.authorizeHttpRequests()
-                .mvcMatchers("/",
-                        "/members/**",
-                        "/item/**",
-                        "/images/**")
-                .permitAll()
-                .mvcMatchers("/admin/**").hasRole("ADMIN")
-                .anyRequest().authenticated();
+        http.authorizeHttpRequests((authorizeRequest) ->  // 시큐리티 처리에 HttpServiceRequest를 이용
+                authorizeRequest
+                        .requestMatchers("/", "/members/**", "/item/**", "/images/**").permitAll()  // 모든 사용자가 인증 없이 해당 경로에 접근할 수 있게 설정
+                        .requestMatchers("/admin/**").hasRole("ADMIN")  // /admin으로 시작하는 경로는 해당 계정이 ADMIN role일 경우에만 가능
+                        .anyRequest().authenticated()  // 앞서 설정한 경로를 제외한 나머지 경로들은 모두 인증을 요
+        );
 
-        http.exceptionHandling()
-                .authenticationEntryPoint(new CustomAuthenticationEntryPoint());
+        http.exceptionHandling((exception) ->
+                exception
+                        .authenticationEntryPoint(new CustomAuthenticationEntryPoint())  // 인증되지 않은 사용자가 리소스에 접근한 경우 수행되는 핸들러 등록
+        );
 
         return http.build();
     }
 
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
-        return (web) -> web.ignoring().antMatchers("/css/**", "/js/**", "/img/**");
+        return (web) -> web.ignoring().requestMatchers("/css/**", "/js/**", "/img/**");  // static directory의 하위 파일은 인증을 무시
     }
 
     @Bean
@@ -61,12 +65,10 @@ public class SecurityConfig {
     // spring security에서 인증은 AuthenticationManager를 통해 이루어짐.
     // AuthenticationManagerBuilder가 AuthenticationManager를 생성.
     // userDetailService를 구현하고 있는 객체로 memberService를 지정해주며, 비밀번호 암호화를 위해 passwordEncoder 지정
-    // 현재는 deprecated됨.
-    // 이 상태에서 memberService를 어떻게 지정해주는지?
 
-//    @Bean
-//    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
-//        throws Exception {
-//        return authenticationConfiguration.getAuthenticationManager();
-//    }
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
+        throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
 }
